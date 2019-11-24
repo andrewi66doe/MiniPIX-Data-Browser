@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Acquisition {{acquisition.id}}</title>
+    {{ resources | safe}}
+    <style>
+        .btn-group button {
+          background-color: #4CAF50; /* Green background */
+          border: 1px solid green; /* Green border */
+          color: white; /* White text */
+          padding: 5px 12px; /* Some padding */
+          cursor: pointer; /* Pointer/hand icon */
+          width: 150px; /* Set a width if needed */
+          display: block; /* Make the buttons appear below each other */
+          margin-left: 25px;
+        }
+
+        .btn-group button:not(:last-child) {
+          border-bottom: none; /* Prevent double borders */
+        }
+
+        /* Add a background color on hover */
+        .btn-group button:hover {
+          background-color: #3e8e41;
+        }
+        .btn-group {
+
+           margin-top: 130px;
+        }
+
+        body{
+            margin: 0;
+         }
+        .wrapper{
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+        .header, .footer{
+          height: 50px;
+          color: #fff;
+        }
+        .content {
+          display: flex;
+          flex: 1;
+          color: #000;
+        }
+        .columns{
+          display: flex;
+          flex:1;
+        }
+        .main{
+          order: 2;
+          width: 250px;
+        }
+        .sidebar-first{
+          width: 750px;
+          order: 1;
+        }
+        .sidebar-second{
+          width: 500px;
+          order: 3;
+        }
+
+        .sidebar-third{
+          order: 4;
+          width: 250px;
+        }
+
+        .row {
+          display: flex;
+          flex-direction: row;
+          flex-wrap: wrap;
+          width: 100%;
+        }
+
+        .clusterinfo {
+          float: right;
+        }
+        .cluster_plot {
+          width:500px;
+          height:400px;
+        }
+        .acquisition_timeseries {
+          width:500px;
+          height:250px;
+        }
+        table{
+            margin-top: 75px;
+            border: 1px solid black;
+            border-collapse: collapse;
+
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 5px;
+            text-align: left;
+            width: 40px;
+        }
+
+
+    </style>
+
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="header">
+            <button id="last" onclick="last();">last</button>
+            <button id="next" onclick="next();">next</button>
+            <input type="text" id="goto">
+            <button onclick="gotoframe();">goto</button>
+        </div>
+        <section class="content">
+            <div class="columns">
+
+                <div class="sidebar-first">
+                    <div id="frame"></div>
+                </div>
+                <div class="main">
+                    <div id="clusters" class="btn-group"></div>
+                </div>
+                <div class="sidebar-second">
+                        <div class="cluster_plot" id="cluster"></div>
+                        <div class="acquisition_timeseries" id="acquisition_timeseries"></div>
+                </div>
+                <div class="sidebar-third">
+                    <div id="clusterinfo"></div>
+                </div>
+            </div>
+        </section>
+          <footer class="footer">Footer: Fixed height</footer>
+
+    </div>
+
+
+
+    <script>
+    var display_id = 0;
+    var start = {{acq_start}};
+    var i = {{acq_start}};
+    var end = {{acq_end}};
+    var acq_id = {{acquisition.id}};
+
+    function display_frame(i){
+
+            document.getElementById("goto").value = String(display_id);
+
+            fetch('/frame/' + i)
+                .then(function(response) { return response.json(); })
+                .then(function(item) { Bokeh.embed.embed_item(item); })
+            clear_element("cluster");
+            get_clusters();
+    }
+
+    async function plot_cluster(i){
+        clear_element("cluster");
+        fetch('/cluster/' + i + '/plot')
+        .then(function(response) { return response.json();})
+        .then(function(item) { Bokeh.embed.embed_item(item);});
+        fetch('/cluster/' + i)
+        .then(function(response) { return response.json();})
+        .then(function(item) { show_cluster_properties(item);});
+
+    }
+
+    function show_cluster_properties(json){
+        clear_element("clusterinfo");
+        var table = document.createElement("table")
+        var cinfodiv = document.getElementById("clusterinfo")
+
+        var header_row = document.createElement("tr");
+        var key_header = document.createElement("th");
+        var value_header = document.createElement("th");
+        var keytext = document.createTextNode("Property");
+        var valtext = document.createTextNode("Value");
+        key_header.appendChild(keytext);
+        value_header.appendChild(valtext);
+        header_row.appendChild(key_header);
+        header_row.appendChild(value_header);
+        table.appendChild(header_row);
+
+        for (var key in json) {
+
+            var row = document.createElement("tr");
+            var keydata = document.createElement("td");
+            var valdata = document.createElement("td");
+
+
+            var keytext = document.createTextNode(key);
+            var valtext = document.createTextNode(json[key]);
+
+            keydata.appendChild(keytext);
+            valdata.appendChild(valtext);
+            row.appendChild(keydata);
+            row.appendChild(valdata);
+            table.appendChild(row);
+
+        }
+        cinfodiv.appendChild(table);
+
+    }
+    function clear_element(id){
+        var myNode = document.getElementById(id);
+        while (myNode.firstChild) {
+            myNode.removeChild(myNode.firstChild);
+        }
+    }
+    function clear_frame(){
+        clear_element("frame");
+    }
+
+    function clear_clusters(){
+        clear_element("clusters");
+    }
+
+    function next(){
+        if( i + 1 <= end){
+            clear_frame();
+            display_id += 1;
+            i += 1;
+            display_frame(i);
+        }
+
+    }
+    function last(){
+        if(i - 1 >= start){
+            clear_frame();
+            display_id -= 1;
+            i -= 1;
+            display_frame(i);
+        }
+    }
+
+    function gotoframe(){
+        var goto_frame = document.getElementById("goto").value;
+
+
+        var tmp = start + parseInt(goto_frame);
+        console.log(tmp);
+        if(tmp > start && tmp < end){
+            clear_frame();
+            i = tmp;
+            display_id = i;
+            display_frame(i);
+        }
+    }
+
+    async function get_cluster_ids(){
+        console.log("Getting cluster ids");
+
+        clear_clusters();
+        fetch('/frame/' + i + '/clusters')
+        .then(res => res.json())
+        .then((out) => {
+            for(var i=0;i<out.length;i++){
+                display_cluster(out[i], i+1);
+            }
+            if(out.length > 0){
+                plot_cluster(out[0]);
+            }
+         })
+         .catch(err => {throw err});
+    }
+
+    function get_clusters(){
+        get_cluster_ids();
+    }
+
+    function display_cluster(id, i){
+
+        var node = document.createElement("button");                 // Create a <li> node
+        var textnode = document.createTextNode(i);         // Create a text node
+        node.appendChild(textnode);
+        node.setAttribute('onclick', "plot_cluster(" + id + ")");
+        document.getElementById("clusters").appendChild(node);
+
+    }
+
+    function display_acquisition_timeseries(i){
+
+        fetch('/acquisitions/' + i + '/timeseries')
+                .then(function(response) { return response.json(); })
+                .then(function(item) { Bokeh.embed.embed_item(item); })
+    }
+    display_frame(i);
+    display_acquisition_timeseries(acq_id);
+
+    </script>
+
+
+</body>
+</html>

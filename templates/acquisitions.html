@@ -1,0 +1,22 @@
+{% extends "bootstrap/base.html" %}
+{% block title %}This is an example page{% endblock %}
+
+{% block navbar %}
+  <title>Acquisitions</title>
+
+<div class="navbar navbar-fixed-top">
+  <!-- ... -->
+</div>
+{% endblock %}
+
+{% block content %}
+    <h1>SORA Flight Data</h1>
+    <div class="container">
+        <h2>Data from 2017 and 2018 flights</h2>
+        <ul>
+            <li class="list-group-item"><a href="/acquisitions/1">2017</a></li>
+            <li class="list-group-item"><a href="/acquisitions/2">2018</a></li>
+            <li class="list-group-item"><a href="/acquisitions/3">2019</a></li>
+        </ul>
+    </div>
+{% endblock %}
