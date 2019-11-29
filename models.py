@@ -4,9 +4,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.hybrid import hybrid_method
 from serialalchemy import Serializable
-
+from config import DATABASE_URI
 Base = declarative_base()
-engine = create_engine('mysql+pymysql://root:Amazinggaw1452!@localhost/timepix?host=localhost?port=3306', echo=True)
+engine = create_engine(DATABASE_URI, echo=True)
 
 
 class AcquisitionModel(Base):
@@ -87,5 +87,3 @@ def get_db_session():
 
 if __name__ == '__main__':
     Base.metadata.create_all(engine)
-
-

@@ -134,7 +134,6 @@ class Frame:
         clusters = find_objects(labeled)
 
         for cluster in clusters:
-
             plt.figure()
             plt.imshow(self.arr.todense()[cluster])
 
@@ -302,7 +301,7 @@ def insert_into_database(acq):
 
 if __name__ == '__main__':
     t0 = time.time()
-    filename = '/home/lycurgus/Documents/HASP_2019_data/hasp_2019_medipix/mp_output-2019-09-05 10:17:16.pmf'
+    filename = '/Users/andreww/mp_output-2019-09-05 13:17:16.pmf'
     acq = Acquisition(filename)
 
     t1 = time.time()
@@ -310,10 +309,11 @@ if __name__ == '__main__':
     frames = []
     print("Duration: {}".format(t1 - t0))
 
-    for frame in acq.load():
-        frames.append(frames)
+    # for frame in acq.load():
+    #     frames.append(frames)
 
-    # insert_into_database(acq)
-    import pickle
-    f = open(filename + '.pkl', 'wb')
-    pickle.dump(frames, )
+    insert_into_database(acq)
+    # import pickle
+
+    # f = open(filename + '.pkl', 'wb')
+    # pickle.dump(frames, )

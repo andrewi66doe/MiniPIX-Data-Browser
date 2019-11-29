@@ -11,7 +11,7 @@ def order_points(points):
     :return:
     """
     # This should only accept values with exactly four points.
-    assert(len(points) == 4)
+    assert (len(points) == 4)
 
     # Sort by x-values first
     x_sorted = points[np.argsort(points[:, 0]), :]
