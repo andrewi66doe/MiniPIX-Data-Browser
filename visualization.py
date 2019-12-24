@@ -97,3 +97,10 @@ def generate_cluster_plot(cluster):
     return Column(slider, plot)
 
 
+def generate_counts_plot(counts):
+
+    plot = figure(x_range=(0, len(counts)), y_range=(0, max(counts)[0]),
+                  width=500, height=250,
+                  title="Counts Vs. Frames")
+    plot.line(range(len(counts)), counts, line_color="black")
+    return plot

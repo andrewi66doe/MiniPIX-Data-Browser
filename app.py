@@ -1,17 +1,21 @@
 
 import json
+import os
+import logging
 
-from bokeh.plotting import figure
-from flask import Flask, render_template
+from flask import Flask
+from flask import render_template, Blueprint, request, make_response
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 
 from bokeh.embed import json_item
 from bokeh.resources import CDN
 
+from werkzeug.utils import secure_filename
 from config import DATABASE_URI
 from models import FrameModel, AcquisitionModel, ClusterModel
-from visualization import generate_frame_plot, generate_cluster_plot
+from visualization import generate_frame_plot, generate_cluster_plot, generate_counts_plot
 
 app = Flask(__name__)
 
@@ -21,6 +25,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 Bootstrap(app)
 
+log = logging.getLogger('pydrop')
 
 @app.route('/')
 def acquisition_page():
@@ -47,7 +52,9 @@ def acquisition_view(acquisition_id):
 
 @app.route('/acquisitions/<int:acquisition_id>/timeseries')
 def aquisition_timeseries(acquisition_id):
-    plot = generate_counts_vs_time(acquisition_id)
+    counts = list(db.session.query(FrameModel.counts).filter_by(acquisition_id=acquisition_id).all())
+
+    plot = generate_counts_plot(counts)
     return json.dumps(json_item(plot, "acquisition_timeseries"))
 
 
@@ -105,15 +112,56 @@ def clusters(frame_id):
     return json.dumps(cluster_ids)
 
 
+@app.route('/upload_page', methods=['GET'])
+def upload_page():
+    return render_template('upload.html',
+                           page_name='Main',
+                           project_name="pydrop")
+
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files['file']
+
+    save_path = os.path.join('data', secure_filename(file.filename))
+    current_chunk = int(request.form['dzchunkindex'])
+
+    # If the file already exists it's ok if we are appending to it,
+    # but not if it's new file that would overwrite the existing one
+    if os.path.exists(save_path) and current_chunk == 0:
+        # 400 and 500s will tell dropzone that an error occurred and show an error
+        return make_response(('File already exists', 400))
+
+    try:
+        with open(save_path, 'ab') as f:
+            f.seek(int(request.form['dzchunkbyteoffset']))
+            f.write(file.stream.read())
+    except OSError:
+        # log.exception will include the traceback so we can see what's wrong
+        log.exception('Could not write to file')
+        return make_response(("Not sure why,"
+                              " but we couldn't write the file to disk", 500))
+
+    total_chunks = int(request.form['dztotalchunkcount'])
+
+    if current_chunk + 1 == total_chunks:
+        # This was the last chunk, the file should be complete and the size we expect
+        if os.path.getsize(save_path) != int(request.form['dztotalfilesize']):
+            log.error(f"File {file.filename} was completed, "
+                      f"but has a size mismatch."
+                      f"Was {os.path.getsize(save_path)} but we"
+                      f" expected {request.form['dztotalfilesize']} ")
+            return make_response(('Size mismatch', 500))
+        else:
+            log.info(f'File {file.filename} has been uploaded successfully')
+    else:
+        log.debug(f'Chunk {current_chunk + 1} of {total_chunks} '
+                  f'for file {file.filename} complete')
+
+    return make_response(("Chunk upload successful", 200))
+
+
 if __name__ == '__main__':
     app.run(debug=True)
 
 
-def generate_counts_vs_time(acquisition_id):
-    counts = list(db.session.query(FrameModel.counts).filter_by(acquisition_id=acquisition_id).all())
-
-    plot = figure(x_range=(0, len(counts)), y_range=(0, max(counts)[0]),
-                  width=500, height=250,
-                  title="Counts Vs. Frames")
-    plot.line(range(len(counts)), counts, line_color="black")
-    return plot

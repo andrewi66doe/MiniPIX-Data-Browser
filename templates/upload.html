@@ -1,0 +1,35 @@
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <link rel="stylesheet"
+     href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/dropzone.min.css"/>
+
+    <link rel="stylesheet"
+     href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/basic.min.css"/>
+
+    <script type="application/javascript"
+     src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.4.0/min/dropzone.min.js">
+    </script>
+
+    <title>File Dropper</title>
+</head>
+<body>
+<h1>Upload Data</h1>
+<form method="POST" action='/upload' class="dropzone dz-clickable"
+      id="dropper" enctype="multipart/form-data">
+</form>
+
+<script type="application/javascript">
+    Dropzone.options.dropper = {
+        paramName: 'file',
+        chunking: true,
+        forceChunking: true,
+        url: '/upload',
+        maxFilesize: 2048, // megabytes
+        chunkSize: 1000000 // bytes
+    }
+</script>
+</body>
+</html>
