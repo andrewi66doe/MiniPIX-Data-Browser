@@ -2,7 +2,7 @@ aniso8601==6.0.0
 beautifulsoup4==4.7.1
 bokeh==1.0.4
 bs4==0.0.1
-certifi==2019.3.9
+certifi==2022.12.7
 chardet==3.0.4
 Click==7.0
 cloudpickle==0.7.0
